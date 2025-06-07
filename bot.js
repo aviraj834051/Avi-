@@ -7,33 +7,16 @@ let npContent = fs.existsSync("np.txt") ? fs.readFileSync("np.txt", "utf-8") : "
 let np2Content = fs.existsSync("np2.txt") ? fs.readFileSync("np2.txt", "utf-8") : "np2.txt not found!";
 
 let prefix = "/";
-let bossUID = null;
+let bossUID = "100005122337500"; // 👑 Boss by default
 let groupNameLocked = false;
 let lockedGroupName = "";
 
-// 🧠 Multiple fake group chats
 let groups = [
-    {
-        id: "gc1",
-        name: "Study Group",
-        participants: ["uid1", "uid2"],
-        nicknames: {},
-    },
-    {
-        id: "gc2",
-        name: "Friends Chat",
-        participants: ["uid3", "uid4"],
-        nicknames: {},
-    },
-    {
-        id: "gc3",
-        name: "Gaming Squad",
-        participants: ["uid5", "uid6"],
-        nicknames: {},
-    },
+    { id: "gc1", name: "Study Group", participants: ["uid1", "uid2"], nicknames: {} },
+    { id: "gc2", name: "Friends Chat", participants: ["uid3", "uid4"], nicknames: {} },
+    { id: "gc3", name: "Gaming Squad", participants: ["uid5", "uid6"], nicknames: {} },
 ];
 
-// 🖨️ Sab GC ke UID show karne ke liye
 function showAllGroupUIDs() {
     console.log("📌 GC list:");
     groups.forEach(group => {
@@ -41,14 +24,22 @@ function showAllGroupUIDs() {
     });
 }
 
-// 💬 Har GC pe command propagate karna
-function broadcastCommand(command, args) {
+function sendStartupMessage() {
+    groups.forEach(group => {
+        console.log(`[${group.name}] 🚩 Avii Raj active hogya`);
+    });
+}
+
+function broadcastCommand(command, args, senderUID) {
+    if (senderUID !== bossUID) {
+        console.log(`🚫 Access denied. Sirf boss UID command de sakta hai.`);
+        return;
+    }
     groups.forEach(group => {
         processCommandInGroup(group, command, args);
     });
 }
 
-// 🔄 Command processor per group
 function processCommandInGroup(group, cmd, args) {
     if (cmd === `${prefix}setallname`) {
         const name = args.slice(1).join(" ");
@@ -63,11 +54,12 @@ function processCommandInGroup(group, cmd, args) {
     }
 
     else if (cmd === `${prefix}start`) {
-        console.log(`[${group.name}] 📩 np.txt:\n---\n${npContent}\n---`);
-    }
-
-    else if (cmd === `${prefix}np2`) {
-        console.log(`[${group.name}] 📩 np2.txt:\n---\n${np2Content}\n---`);
+        const param = args[1];
+        if (param === "np2") {
+            console.log(`[${group.name}] 📩 np2.txt:\n---\n${np2Content}\n---`);
+        } else {
+            console.log(`[${group.name}] 📩 np.txt:\n---\n${npContent}\n---`);
+        }
     }
 
     else if (cmd === `${prefix}mkl`) {
@@ -90,34 +82,52 @@ function processCommandInGroup(group, cmd, args) {
     }
 }
 
-// 🟢 Terminal setup
+// 🟢 Terminal input
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-console.log("🤖 Bot chalu ho gaya hai! Command daalein (e.g. /setboss UID or /start)");
+sendStartupMessage();
+console.log("🤖 Bot chalu ho gaya hai! Command likho (e.g. UID /start np):");
 
 rl.on("line", async (input) => {
-    const args = input.trim().split(" ");
-    const cmd = args[0];
+    const parts = input.trim().split(" ");
+    const senderUID = parts[0];   // ⬅️ First word = UID
+    const cmd = parts[1];         // ⬅️ Second word = Command
+    const args = parts.slice(1);  // ⬅️ Full args (from command onward)
+
+    if (!cmd.startsWith(prefix)) {
+        console.log("⚠️ Command prefix sahi nahi hai. Use like: 10000 /start np");
+        return;
+    }
 
     if (cmd === `${prefix}setboss`) {
-        bossUID = args[1];
-        console.log(`👑 Boss set: ${bossUID}`);
+        if (senderUID === bossUID) {
+            const newUID = parts[2];
+            bossUID = newUID;
+            console.log(`👑 Boss update: ${bossUID}`);
+        } else {
+            console.log("🚫 Sirf current boss hi boss change kar sakta hai.");
+        }
     }
 
     else if (cmd === `${prefix}allgc`) {
-        showAllGroupUIDs();
+        if (senderUID === bossUID) showAllGroupUIDs();
+        else console.log("🚫 Authorized boss UID hi yeh command chala sakta hai.");
     }
 
     else if ([`${prefix}setallname`, `${prefix}lockgrpname`, `${prefix}start`, `${prefix}np2`, `${prefix}mkl`, "changename"].includes(cmd)) {
-        broadcastCommand(cmd, args);
+        broadcastCommand(cmd, args, senderUID);
     }
 
     else if (cmd === `${prefix}exit` || cmd === `${prefix}stop`) {
-        console.log("🛑 Bot band ho gaya.");
-        process.exit();
+        if (senderUID === bossUID) {
+            console.log("🛑 Bot band ho gaya.");
+            process.exit();
+        } else {
+            console.log("🚫 Sirf boss bot band kar sakta hai.");
+        }
     }
 
     else {
