@@ -1,11 +1,11 @@
 {
-  "name": "fb-bot",
+  "name": "fb-bot-avii",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "fca-unofficial": "^2.0.1"
+    "fca-unofficial": "^1.3.1"
   }
 }
