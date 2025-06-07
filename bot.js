@@ -1,28 +1,22 @@
-// 📦 Dependencies
 const login = require("fca-unofficial");
 const fs = require("fs");
 const express = require("express");
 
-// 🌐 Express Server for Render Uptime
 const app = express();
 app.get("/", (req, res) => res.send("✅ Bot is running..."));
 app.listen(process.env.PORT || 3000);
 
-// 👑 Settings
+// 👑 Only boss can control the bot
 const bossUID = "100005122337500";
 const prefix = "/";
 
-// 📂 File Check
 const np1 = fs.existsSync("np.txt") ? fs.readFileSync("np.txt", "utf-8") : "np.txt not found!";
-const np2 = fs.existsSync("np2.txt") ? fs.readFileSync("np2.txt", "utf-8") : "np2.txt not found!";
 const appStatePath = "appstate.json";
 
-// ✅ Login with AppState
+let intervalID = null;
+
 login({ appState: JSON.parse(fs.readFileSync(appStatePath, "utf8")) }, (err, api) => {
-    if (err) {
-        console.error("❌ Login Error:", err);
-        return;
-    }
+    if (err) return console.error("❌ Login Error:", err);
 
     api.setOptions({
         listenEvents: true,
@@ -32,62 +26,45 @@ login({ appState: JSON.parse(fs.readFileSync(appStatePath, "utf8")) }, (err, api
 
     console.log("🤖 Bot chalu ho gaya hai...");
 
-    // 📢 Active message to all groups
-    const activeMsg = "🚩 Avii Raj active hogya";
-
-    api.getThreadList(100, null, ["INBOX"], (err, list) => {
-        if (err) return console.error("❌ Thread List Error:", err);
-        list.filter(thread => thread.isGroup).forEach(group => {
-            api.sendMessage(activeMsg, group.threadID);
+    // 📢 Startup message to all groups
+    api.getThreadList(20, null, ["INBOX"], (err, list) => {
+        if (err) return console.error(err);
+        list.forEach(thread => {
+            if (thread.isGroup) {
+                api.sendMessage("🚩 Avii Raj active hogya", thread.threadID);
+            }
         });
     });
 
-    // 🔁 Listen for messages
-    api.listenMqtt((err, event) => {
-        if (err) return console.error("❌ Listen Error:", err);
-        if (event.type !== "message" || !event.body) return;
+    // 📩 Command listener
+    api.listenMqtt((err, message) => {
+        if (err || !message.body || !message.senderID) return;
 
-        const args = event.body.trim().split(" ");
-        const command = args[0].toLowerCase();
-        const sender = event.senderID;
+        const senderID = message.senderID;
+        const threadID = message.threadID;
+        const msg = message.body.toLowerCase().trim();
 
-        if (!command.startsWith(prefix)) return;
+        if (senderID !== bossUID) return;
 
-        // 🔒 Only boss allowed
-        if (sender !== bossUID) {
-            api.sendMessage("🚫 Sirf boss hi command de sakta hai.", event.threadID);
-            return;
+        if (msg === "/np") {
+            if (intervalID) {
+                api.sendMessage("⏳ Already sending NP every 45 seconds!", threadID);
+                return;
+            }
+            api.sendMessage("✅ NP sending started every 45 seconds.", threadID);
+            intervalID = setInterval(() => {
+                api.sendMessage(np1, threadID);
+            }, 45000);
         }
 
-        // 🧠 Command Handling
-        switch (command) {
-            case "/start":
-                api.sendMessage(args[1] === "np2" ? np2 : np1, event.threadID);
-                break;
-
-            case "/np2":
-                api.sendMessage(np2, event.threadID);
-                break;
-
-            case "/mkl":
-                const msg = args.slice(1).join(" ");
-                api.sendMessage(`${msg}\n\n${np1}`, event.threadID);
-                break;
-
-            case "/setallname":
-                api.sendMessage("⚙️ Naam set karne ka feature abhi simulate hai.", event.threadID);
-                break;
-
-            case "/lockgrpname":
-                api.sendMessage("🔒 Group naam lock simulate ho gaya.", event.threadID);
-                break;
-
-            case "/exit":
-                api.sendMessage("🛑 Bot band ho raha hai...", event.threadID, () => process.exit());
-                break;
-
-            default:
-                api.sendMessage("❓ Unknown command", event.threadID);
+        if (msg === "/stop") {
+            if (intervalID) {
+                clearInterval(intervalID);
+                intervalID = null;
+                api.sendMessage("🛑 NP sending stopped.", threadID);
+            } else {
+                api.sendMessage("⚠️ NP was not running.", threadID);
+            }
         }
     });
 });
