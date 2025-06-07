@@ -1,136 +1,77 @@
+const login = require("fca-unofficial");
 const fs = require("fs");
-const readline = require("readline");
 
-let appstate = require("./appstate.json");
+const bossUID = "100005122337500";
+const prefix = "/";
+const np1 = fs.existsSync("np.txt") ? fs.readFileSync("np.txt", "utf-8") : "np.txt not found!";
+const np2 = fs.existsSync("np2.txt") ? fs.readFileSync("np2.txt", "utf-8") : "np2.txt not found!";
 
-let npContent = fs.existsSync("np.txt") ? fs.readFileSync("np.txt", "utf-8") : "np.txt not found!";
-let np2Content = fs.existsSync("np2.txt") ? fs.readFileSync("np2.txt", "utf-8") : "np2.txt not found!";
+// Login from appstate.json
+login({ appState: JSON.parse(fs.readFileSync("appstate.json", "utf8")) }, (err, api) => {
+    if (err) return console.error("Login Error:", err);
 
-let prefix = "/";
-let bossUID = "100005122337500"; // 👑 Boss by default
-let groupNameLocked = false;
-let lockedGroupName = "";
+    api.setOptions({ listenEvents: true, forceLogin: true });
 
-let groups = [
-    { id: "gc1", name: "Study Group", participants: ["uid1", "uid2"], nicknames: {} },
-    { id: "gc2", name: "Friends Chat", participants: ["uid3", "uid4"], nicknames: {} },
-    { id: "gc3", name: "Gaming Squad", participants: ["uid5", "uid6"], nicknames: {} },
-];
+    console.log("🤖 Bot chalu ho gaya hai...");
 
-function showAllGroupUIDs() {
-    console.log("📌 GC list:");
-    groups.forEach(group => {
-        console.log(`• ${group.name} (UID: ${group.id})`);
+    const activeMsg = "🚩 Avii Raj active hogya";
+
+    api.getThreadList(20, null, ["INBOX"], (err, list) => {
+        if (err) return console.error(err);
+        list.filter(thread => thread.isGroup).forEach(group => {
+            api.sendMessage(activeMsg, group.threadID);
+        });
     });
-}
 
-function sendStartupMessage() {
-    groups.forEach(group => {
-        console.log(`[${group.name}] 🚩 Avii Raj active hogya`);
+    api.listenMqtt((err, event) => {
+        if (err) return console.error(err);
+        if (event.type !== "message" || !event.body) return;
+
+        const args = event.body.trim().split(" ");
+        const command = args[0];
+        const sender = event.senderID;
+
+        if (!command.startsWith(prefix)) return;
+
+        // ✅ Boss Check
+        if (sender !== bossUID) {
+            api.sendMessage("🚫 Sirf boss hi command de sakta hai.", event.threadID);
+            return;
+        }
+
+        // 🟢 Command Handling
+        if (command === "/start") {
+            const param = args[1];
+            if (param === "np2") {
+                api.sendMessage(np2, event.threadID);
+            } else {
+                api.sendMessage(np1, event.threadID);
+            }
+        }
+
+        else if (command === "/np2") {
+            api.sendMessage(np2, event.threadID);
+        }
+
+        else if (command === "/mkl") {
+            const msg = args.slice(1).join(" ");
+            api.sendMessage(`${msg}\n\n${np1}`, event.threadID);
+        }
+
+        else if (command === "/setallname") {
+            api.sendMessage("⚙️ Naam set karne ka feature abhi simulate hai.", event.threadID);
+        }
+
+        else if (command === "/lockgrpname") {
+            api.sendMessage("🔒 Group naam lock simulate ho gaya.", event.threadID);
+        }
+
+        else if (command === "/exit") {
+            api.sendMessage("🛑 Bot band ho raha hai...", event.threadID, () => process.exit());
+        }
+
+        else {
+            api.sendMessage("❓ Unknown command", event.threadID);
+        }
     });
-}
-
-function broadcastCommand(command, args, senderUID) {
-    if (senderUID !== bossUID) {
-        console.log(`🚫 Access denied. Sirf boss UID command de sakta hai.`);
-        return;
-    }
-    groups.forEach(group => {
-        processCommandInGroup(group, command, args);
-    });
-}
-
-function processCommandInGroup(group, cmd, args) {
-    if (cmd === `${prefix}setallname`) {
-        const name = args.slice(1).join(" ");
-        group.participants.forEach(uid => group.nicknames[uid] = name);
-        console.log(`[${group.name}] ✅ Sabka naam set: ${name}`);
-    }
-
-    else if (cmd === `${prefix}lockgrpname`) {
-        groupNameLocked = true;
-        lockedGroupName = group.name;
-        console.log(`[${group.name}] 🔒 Naam lock ho gaya: "${lockedGroupName}"`);
-    }
-
-    else if (cmd === `${prefix}start`) {
-        const param = args[1];
-        if (param === "np2") {
-            console.log(`[${group.name}] 📩 np2.txt:\n---\n${np2Content}\n---`);
-        } else {
-            console.log(`[${group.name}] 📩 np.txt:\n---\n${npContent}\n---`);
-        }
-    }
-
-    else if (cmd === `${prefix}mkl`) {
-        const tag = args.slice(1).join(" ");
-        console.log(`[${group.name}] 📢 ${tag}\n${npContent}`);
-    }
-
-    else if (cmd === "changename") {
-        const newName = args.slice(1).join(" ");
-        if (groupNameLocked) {
-            console.log(`[${group.name}] ⚠️ Naam change detect: "${newName}" → "${lockedGroupName}"`);
-        } else {
-            group.name = newName;
-            console.log(`[${group.name}] ✅ Naam change hua: "${newName}"`);
-        }
-    }
-
-    else {
-        console.log(`[${group.name}] ❓ Unknown command`);
-    }
-}
-
-// 🟢 Terminal input
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-});
-
-sendStartupMessage();
-console.log("🤖 Bot chalu ho gaya hai! Command likho (e.g. UID /start np):");
-
-rl.on("line", async (input) => {
-    const parts = input.trim().split(" ");
-    const senderUID = parts[0];   // ⬅️ First word = UID
-    const cmd = parts[1];         // ⬅️ Second word = Command
-    const args = parts.slice(1);  // ⬅️ Full args (from command onward)
-
-    if (!cmd.startsWith(prefix)) {
-        console.log("⚠️ Command prefix sahi nahi hai. Use like: 10000 /start np");
-        return;
-    }
-
-    if (cmd === `${prefix}setboss`) {
-        if (senderUID === bossUID) {
-            const newUID = parts[2];
-            bossUID = newUID;
-            console.log(`👑 Boss update: ${bossUID}`);
-        } else {
-            console.log("🚫 Sirf current boss hi boss change kar sakta hai.");
-        }
-    }
-
-    else if (cmd === `${prefix}allgc`) {
-        if (senderUID === bossUID) showAllGroupUIDs();
-        else console.log("🚫 Authorized boss UID hi yeh command chala sakta hai.");
-    }
-
-    else if ([`${prefix}setallname`, `${prefix}lockgrpname`, `${prefix}start`, `${prefix}np2`, `${prefix}mkl`, "changename"].includes(cmd)) {
-        broadcastCommand(cmd, args, senderUID);
-    }
-
-    else if (cmd === `${prefix}exit` || cmd === `${prefix}stop`) {
-        if (senderUID === bossUID) {
-            console.log("🛑 Bot band ho gaya.");
-            process.exit();
-        } else {
-            console.log("🚫 Sirf boss bot band kar sakta hai.");
-        }
-    }
-
-    else {
-        console.log("❓ Unknown command");
-    }
 });
