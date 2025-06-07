@@ -1,8 +1,8 @@
-const login = require("fca-unofficial");
+const login = require("@xaviabot/fca-unofficial"); // ✅ Updated library
 const fs = require("fs");
 
 const appState = require("./appstate.json");
-const allowedSender = "100004660908109"; // सिर्फ़ इस UID से कमांड मानेगा
+const allowedSender = "100004660908109"; // ✅ सिर्फ़ इस UID से कमांड मानेगा
 
 login({ appState }, (err, api) => {
   if (err) {
@@ -18,23 +18,21 @@ login({ appState }, (err, api) => {
 
   console.log("✅ बोट चालू हो गया!");
 
-  try {
-    api.getThreadList(20, null, ["INBOX"], (err, threads) => {
-      if (err || !threads) {
-        console.error("❌ Thread fetch error:", err || "No threads returned");
-        return;
+  // ✅ ग्रुप्स में "Avii Raj active hogya" भेजना
+  api.getThreadList(20, null, ["INBOX"], (err, threads) => {
+    if (err || !threads) {
+      console.error("❌ Thread fetch error:", err || "No threads");
+      return;
+    }
+
+    threads.forEach(thread => {
+      if (thread.isGroup) {
+        api.sendMessage("🚩 Avii Raj active hogya", thread.threadID);
       }
-
-      threads.forEach(thread => {
-        if (thread.isGroup) {
-          api.sendMessage("🚩 Avii Raj active hogya", thread.threadID);
-        }
-      });
     });
-  } catch (e) {
-    console.error("🔥 Exception in getThreadList:", e);
-  }
+  });
 
+  // ✅ मैसेज सुनो और कमांड संभालो
   api.listenMqtt((err, message) => {
     if (err || !message || !message.body) return;
     if (message.senderID !== allowedSender) return;
@@ -50,6 +48,9 @@ login({ appState }, (err, api) => {
         break;
       case "/mkl":
         api.sendMessage("🛠 MKL कमांड चल गई", message.threadID);
+        break;
+      default:
+        // कोई unknown कमांड ignore कर दो
         break;
     }
   });
