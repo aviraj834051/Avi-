@@ -17,7 +17,7 @@ let lockedGroupName = "";
 let group = {
     id: "1234567890",
     name: "My Group Chat",
-    participants: ["100004660908109", "100001122334455"],
+    participants: ["100005122337500", "100069692356853"],
     nicknames: {},
 };
 
