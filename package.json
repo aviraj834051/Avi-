@@ -1,12 +1,11 @@
 {
-  "name": "fb-bot-sim",
+  "name": "fb-group-bot",
   "version": "1.0.0",
-  "main": "bot.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node bot.js"
+    "start": "node index.js"
   },
   "dependencies": {
-    "readline": "^1.3.0"
-  },
-  "license": "MIT"
+    "fca-unofficial": "^1.3.1"
+  }
 }
