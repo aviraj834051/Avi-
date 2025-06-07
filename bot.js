@@ -18,7 +18,6 @@ login({ appState }, (err, api) => {
 
   console.log("✅ बोट चालू हो गया!");
 
-  // सभी ग्रुप्स में बोट ऑन मैसेज भेजे
   try {
     api.getThreadList(20, null, ["INBOX"], (err, threads) => {
       if (err || !threads) {
@@ -36,11 +35,8 @@ login({ appState }, (err, api) => {
     console.error("🔥 Exception in getThreadList:", e);
   }
 
-  // मैसेज सुनना
   api.listenMqtt((err, message) => {
     if (err || !message || !message.body) return;
-
-    // सिर्फ allowedSender UID से रिस्पॉन्ड करेगा
     if (message.senderID !== allowedSender) return;
 
     const command = message.body.toLowerCase();
@@ -54,8 +50,6 @@ login({ appState }, (err, api) => {
         break;
       case "/mkl":
         api.sendMessage("🛠 MKL कमांड चल गई", message.threadID);
-        break;
-      default:
         break;
     }
   });
