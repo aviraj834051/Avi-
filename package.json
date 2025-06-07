@@ -1,0 +1,10 @@
+{
+  "name": "fb-bot-sim",
+  "version": "1.0.0",
+  "description": "FB bot simulation using appstate",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {}
+}
