@@ -2,9 +2,9 @@
   "name": "fb-bot",
   "version": "1.0.0",
   "description": "Facebook Messenger Bot by Avii Raj",
-  "main": "index.js",
+  "main": "bot.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node bot.js"
   },
   "keywords": [
     "facebook",
