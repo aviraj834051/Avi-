@@ -1,70 +1,42 @@
 const login = require("fca-unofficial");
 const fs = require("fs");
-const express = require("express");
 
-const app = express();
-app.get("/", (req, res) => res.send("✅ Bot is running..."));
-app.listen(process.env.PORT || 3000);
+const appState = require("./appstate.json");
+const allowedSender = "100004660908109"; // सिर्फ़ इस UID से कमांड मानेगा
 
-// 👑 Only boss can control the bot
-const bossUID = "100005122337500";
-const prefix = "/";
+login({ appState }, (err, api) => {
+  if (err) return console.error("❌ लॉगिन फेल:", err);
 
-const np1 = fs.existsSync("np.txt") ? fs.readFileSync("np.txt", "utf-8") : "np.txt not found!";
-const appStatePath = "appstate.json";
+  api.setOptions({
+    listenEvents: true,
+    selfListen: false,
+    logLevel: "silent"
+  });
 
-let intervalID = null;
+  console.log("✅ बोट चालू हो गया!");
 
-login({ appState: JSON.parse(fs.readFileSync(appStatePath, "utf8")) }, (err, api) => {
-    if (err) return console.error("❌ Login Error:", err);
-
-    api.setOptions({
-        listenEvents: true,
-        forceLogin: true,
-        updatePresence: true
+  // सभी ग्रुप्स में बोट ऑन मैसेज भेजे
+  api.getThreadList(10, null, ["INBOX"], (err, threads) => {
+    if (err) return console.error("Thread fetch error:", err);
+    threads.forEach(thread => {
+      if (thread.isGroup) {
+        api.sendMessage("🚩 Avii Raj active hogya", thread.threadID);
+      }
     });
+  });
 
-    console.log("🤖 Bot chalu ho gaya hai...");
+  // मैसेज सुनना
+  api.listenMqtt((err, message) => {
+    if (err || !message.body || message.senderID !== allowedSender) return;
 
-    // 📢 Startup message to all groups
-    api.getThreadList(20, null, ["INBOX"], (err, list) => {
-        if (err) return console.error(err);
-        list.forEach(thread => {
-            if (thread.isGroup) {
-                api.sendMessage("🚩 Avii Raj active hogya", thread.threadID);
-            }
-        });
-    });
+    const command = message.body.toLowerCase();
 
-    // 📩 Command listener
-    api.listenMqtt((err, message) => {
-        if (err || !message.body || !message.senderID) return;
-
-        const senderID = message.senderID;
-        const threadID = message.threadID;
-        const msg = message.body.toLowerCase().trim();
-
-        if (senderID !== bossUID) return;
-
-        if (msg === "/np") {
-            if (intervalID) {
-                api.sendMessage("⏳ Already sending NP every 45 seconds!", threadID);
-                return;
-            }
-            api.sendMessage("✅ NP sending started every 45 seconds.", threadID);
-            intervalID = setInterval(() => {
-                api.sendMessage(np1, threadID);
-            }, 45000);
-        }
-
-        if (msg === "/stop") {
-            if (intervalID) {
-                clearInterval(intervalID);
-                intervalID = null;
-                api.sendMessage("🛑 NP sending stopped.", threadID);
-            } else {
-                api.sendMessage("⚠️ NP was not running.", threadID);
-            }
-        }
-    });
+    if (command === "/start") {
+      api.sendMessage("✅ बोट चालू है", message.threadID);
+    } else if (command === "/np2") {
+      api.sendMessage("🎵 NP2 प्ले हो रहा है", message.threadID);
+    } else if (command === "/mkl") {
+      api.sendMessage("🛠 MKL कमांड चल गई", message.threadID);
+    }
+  });
 });
