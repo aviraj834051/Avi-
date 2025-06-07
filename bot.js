@@ -1,12 +1,24 @@
+// 📦 Dependencies
 const login = require("fca-unofficial");
 const fs = require("fs");
+const express = require("express");
 
+// 🌐 Express Server for Render Uptime
+const app = express();
+app.get("/", (req, res) => res.send("✅ Bot is running..."));
+app.listen(process.env.PORT || 3000);
+
+// 👑 Settings
 const bossUID = "100005122337500";
 const prefix = "/";
+
+// 📂 File Check
 const np1 = fs.existsSync("np.txt") ? fs.readFileSync("np.txt", "utf-8") : "np.txt not found!";
 const np2 = fs.existsSync("np2.txt") ? fs.readFileSync("np2.txt", "utf-8") : "np2.txt not found!";
+const appStatePath = "appstate.json";
 
-login({ appState: JSON.parse(fs.readFileSync("appstate.json", "utf8")) }, (err, api) => {
+// ✅ Login with AppState
+login({ appState: JSON.parse(fs.readFileSync(appStatePath, "utf8")) }, (err, api) => {
     if (err) {
         console.error("❌ Login Error:", err);
         return;
@@ -20,16 +32,17 @@ login({ appState: JSON.parse(fs.readFileSync("appstate.json", "utf8")) }, (err, 
 
     console.log("🤖 Bot chalu ho gaya hai...");
 
+    // 📢 Active message to all groups
     const activeMsg = "🚩 Avii Raj active hogya";
 
     api.getThreadList(100, null, ["INBOX"], (err, list) => {
         if (err) return console.error("❌ Thread List Error:", err);
-
         list.filter(thread => thread.isGroup).forEach(group => {
             api.sendMessage(activeMsg, group.threadID);
         });
     });
 
+    // 🔁 Listen for messages
     api.listenMqtt((err, event) => {
         if (err) return console.error("❌ Listen Error:", err);
         if (event.type !== "message" || !event.body) return;
@@ -40,11 +53,13 @@ login({ appState: JSON.parse(fs.readFileSync("appstate.json", "utf8")) }, (err, 
 
         if (!command.startsWith(prefix)) return;
 
+        // 🔒 Only boss allowed
         if (sender !== bossUID) {
             api.sendMessage("🚫 Sirf boss hi command de sakta hai.", event.threadID);
             return;
         }
 
+        // 🧠 Command Handling
         switch (command) {
             case "/start":
                 api.sendMessage(args[1] === "np2" ? np2 : np1, event.threadID);
