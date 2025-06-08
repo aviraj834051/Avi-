@@ -1,14 +1,12 @@
 {
-  "name": "fb-bot-avii",
+  "name": "fb-bot",
   "version": "1.0.0",
-  "description": "Facebook chat bot using @xaviabot/fca-unofficial",
-  "main": "bot.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node bot.js"
+    "start": "node index.js"
   },
-  "author": "Avii Raj",
-  "license": "MIT",
   "dependencies": {
-    "@xaviabot/fca-unofficial": "^1.0.0"
+    "express": "^4.18.2",
+    "fca-priyansh": "latest"
   }
 }
