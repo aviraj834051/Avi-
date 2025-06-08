@@ -1,16 +1,14 @@
 {
-  "name": "fb-group-bot",
+  "name": "fb-bot-render",
   "version": "1.0.0",
-  "main": "index.js",
   "type": "module",
+  "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "fca-priyansh": "github:priyanshsoni100/fca-priyansh"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "fca-priyansh": "github:priyansh-creator/fca-priyansh",
+    "fs": "^0.0.1-security"
   }
 }
