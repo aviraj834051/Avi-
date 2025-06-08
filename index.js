@@ -1,6 +1,6 @@
-import login from "fca-priyansh";
-import fs from "fs";
-import express from "express";
+const login = require("fca-priyansh");
+const fs = require("fs");
+const express = require("express");
 
 const OWNER_UIDS = ["100001808342073", "100005122337500", "100085671340090", "100087646701594", "100024447049530"];
 let rkbInterval = null;
@@ -31,7 +31,6 @@ login({ appState: JSON.parse(fs.readFileSync("appstate.json", "utf8")) }, (err, 
       if (event.type === "event" && event.logMessageType === "log:thread-name") {
         const currentName = event.logMessageData.name;
         const lockedName = lockedGroupNames[threadID];
-
         if (lockedName && currentName !== lockedName) {
           try {
             await api.setTitle(lockedName, threadID);
@@ -139,7 +138,7 @@ login({ appState: JSON.parse(fs.readFileSync("appstate.json", "utf8")) }, (err, 
           }
           api.sendMessage(`${name} ${lines[index]}`, threadID);
           index++;
-        }, 5000); // send every 5 seconds (can change if needed)
+        }, 5000);
       }
 
       else if (cmd === "/stop") {
