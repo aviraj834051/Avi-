@@ -11,11 +11,9 @@ const app = express();
 app.get("/", (_, res) => res.send("<h2>Messenger Bot Running</h2>"));
 app.listen(20782, () => console.log("🌐 Log server: http://localhost:20782"));
 
-// Prevent crash on error
 process.on("uncaughtException", (err) => {
   console.error("❗ Uncaught Exception:", err.message);
 });
-
 process.on("unhandledRejection", (reason) => {
   console.error("❗ Unhandled Rejection:", reason);
 });
@@ -28,10 +26,8 @@ login({ appState: JSON.parse(fs.readFileSync("appstate.json", "utf8")) }, (err, 
   api.listenMqtt(async (err, event) => {
     try {
       if (err || !event) return;
-
       const { threadID, senderID, body, messageID } = event;
 
-      // Anti group name change
       if (event.type === "event" && event.logMessageType === "log:thread-name") {
         const currentName = event.logMessageData.name;
         const lockedName = lockedGroupNames[threadID];
@@ -50,7 +46,6 @@ login({ appState: JSON.parse(fs.readFileSync("appstate.json", "utf8")) }, (err, 
       if (!body) return;
       const lowerBody = body.toLowerCase();
 
-      // 🚫 Custom abuse detection
       const badNames = ["hannu", "syco", "anox", "avii"];
       const triggers = ["teri", "bhen", "maa", "Rndi"];
       if (badNames.some(n => lowerBody.includes(n)) && triggers.some(w => lowerBody.includes(w))) {
@@ -61,14 +56,12 @@ login({ appState: JSON.parse(fs.readFileSync("appstate.json", "utf8")) }, (err, 
         );
       }
 
-      // ❌ Ignore if not owner
       if (!OWNER_UIDS.includes(senderID)) return;
 
       const args = body.trim().split(" ");
       const cmd = args[0].toLowerCase();
       const input = args.slice(1).join(" ");
 
-      // Commands for owners
       if (cmd === "/allname") {
         try {
           const info = await api.getThreadInfo(threadID);
@@ -145,3 +138,19 @@ login({ appState: JSON.parse(fs.readFileSync("appstate.json", "utf8")) }, (err, 
             return;
           }
           api.sendMessage(`${name} ${lines[index]}`, threadID);
+          index++;
+        }, 5000); // send every 5 seconds (can change if needed)
+      }
+
+      else if (cmd === "/stop") {
+        stopRequested = true;
+        if (rkbInterval) clearInterval(rkbInterval);
+        rkbInterval = null;
+        api.sendMessage("🛑 RKB spam stopped.", threadID);
+      }
+
+    } catch (e) {
+      console.error("❗ Handler error:", e.message);
+    }
+  });
+});
